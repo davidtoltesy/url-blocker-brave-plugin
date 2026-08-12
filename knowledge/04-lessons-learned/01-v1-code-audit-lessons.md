@@ -1,39 +1,39 @@
-# Tanulságok — v1.0 kód-auditból
+# Lessons — from the v1.0 code audit
 
-> **Olvasás előtt kötelező.** Ez a dokumentum azokat a tanulságokat tartalmazza, amelyek a korábbi (v1.0) kód hibáiból fakadnak. A v2 tervezésekor ezeket a mintákat kerülni kell.
+> **Mandatory reading.** This document contains the lessons drawn from the mistakes in the earlier (v1.0) code. v2 (2026-08-13) implemented all of them per the [09-product-backlog/01-backlog.md](09-product-backlog/01-backlog.md) — reintroducing them in future versions should be avoided.
 
-## 1. A dokumentáció és a kód nem feszülhet szét
+## 1. Documentation and code must not drift apart
 
-A `manifest.json` leírása ("intervallumokon kívül") ellentmond a `background.js` tényleges működésének ("intervallumon belül"). **Tanulság:** bármely verzióban a leírásnak és a kódnak ugyanazt a szemantikát kell tükröznie; a v2 előtt a [ADR-001](03-decisions/adr-001-blocking-semantics.md) döntést le kell zárni.
+The `manifest.json` description ("outside the intervals") contradicts the actual behavior of `background.js` ("within the interval"). **Lesson:** in any version, the description and the code must reflect the same semantics; the [ADR-001](03-decisions/adr-001-blocking-semantics.md) decision had to be closed before v2.
 
-## 2. Az időkezelés a legérzékenyebb része az ütemező kiegészítőknek
+## 2. Time handling is the most sensitive part of scheduling extensions
 
-A v1 nem kezelte az éjfél-átlépést (22:00–06:00), ezért éjfél után sosem blokkolt. **Tanulság:** a v2-ben az intervallum-ütemezést mindig éjfél-átlépés-tudatosan kell megírni (pl. az end < start eset átfordításával) — és ehhez tesztet is kell írni.
+v1 didn't handle midnight crossing (22:00–06:00), so it never blocked after midnight. **Lesson:** in v2, interval scheduling must always be written midnight-crossing-aware (e.g. by flipping the `end < start` case) — and a test must be written for it.
 
-## 3. A DNR szabálykezelést nem szabad keménykódolt számokkal tisztázni
+## 3. DNR rule cleanup should not rely on hardcoded numbers
 
-A `removeRuleIds: [1..100]` akkor törött, ha a szabályok száma meghaladja a 100-at. **Tanulság:** a tisztítandó szabályok listáját mindig a tényleges/ismert ID-kből kell előállítani, nem konstans tömbből.
+`removeRuleIds: [1..100]` breaks when the number of rules exceeds 100. **Lesson:** the list of rules to clean up must always be produced from the actual/known ids, not from a constant array.
 
-## 4. A dinamikus szabályok életciklusa és a "blocked.html" kapcsolata
+## 4. The lifecycle of dynamic rules and the role of "blocked.html"
 
-A DNR `block` akció nem jelenít meg saját oldalt; a `blocked.html` a v1-ben lényegében holt kód. **Tanulság:** a v2-ben vagy törölni kell a fájlt, vagy egy olyan megoldást választani, ami tényleg beköti (ehhez meg kell érteni a DNR redirect korlátait).
+The DNR `block` action doesn't display its own page; in v1 `blocked.html` was essentially dead code. **Lesson:** in v2 the file either had to be deleted, or a solution chosen that actually wires it in (which requires understanding the limits of DNR `redirect`).
 
-## 5. Minden bejövő adatot validálni kell, mielőtt feldolgoztatnánk
+## 5. All incoming data must be validated before processing
 
-A `blockedUrls` elemeinek mezői nincsenek ellenőrizve; a `urlObj.startTime.split()` azonnal eldobható hibát okozhat a lefagyott storage-mal. **Tanulság:** a storage-olvasásnál mindig `try/catch` + mező-szintű validálás kell.
+The fields of `blockedUrls` items aren't validated; `urlObj.startTime.split()` can throw immediately on corrupted storage. **Lesson:** reading storage always needs `try/catch` plus field-level validation.
 
-## 6. Az urlFilter horgonyozása fontos a hamis pozitívok ellen
+## 6. Anchoring the urlFilter is important against false positives
 
-A puszta `urlFilter: "facebook.com"` szövegminta a `notfacebook.com`-ot is blokkolja. **Tanulság:** domain-mintákhoz `||` horgonyozást kell használni, és ezt dokumentálni a felhasználói bevitelhez.
+A bare `urlFilter: "facebook.com"` text pattern also blocks `notfacebook.com`. **Lesson:** domain patterns must use `||` anchoring, and this must be documented for user input.
 
-## 7. A hibaüzenetek felhasználói visszajelzés nélkül nevetségesek
+## 7. Errors without user feedback are pointless
 
-A v1 hiba esetén csak `console.error`-t írt; a felhasználó nem tudta, miért nem működik. **Tanulság:** a popup minden hibáját (ürés mező, rossz formátum, duplikátum) in-place üzenetként kell megjeleníteni.
+On error v1 only wrote a `console.error`; the user couldn't tell why it didn't work. **Lesson:** every popup error (empty field, wrong format, duplicate) must be shown as an in-place message.
 
-## 8. Az alarm-ok nem ébreszthetik feleslegesen a service workert
+## 8. Alarms must not wake the service worker unnecessarily
 
-A v1 percenként `updateDynamicRules`-t hívott akkor is, ha semmi nem változott. **Tanulság:** a v2-ben a frissítést állapot-változás alapján kell triggerelni (ha lehetséges), nem fix periodikusan.
+v1 called `updateDynamicRules` every minute even when nothing changed. **Lesson:** in v2 the refresh should be triggered by a state change (when possible), not on a fixed period.
 
-## 9. A böngésző-műtermékek nem valók a repóba
+## 9. Browser artifacts don't belong in the repo
 
-A `_metadata/` a böngésző által generált bináris ruleset-állapot; a repo-ból ki kell venni (`.gitignore`), különben állandó "módosítás" jelenik meg a git status-ban.
+`_metadata/` is a binary ruleset state generated by the browser; it must be excluded from the repo (`.gitignore`), otherwise a permanent "modification" shows up in `git status`.

@@ -1,27 +1,33 @@
-# ADR-002 — Ütemterv-modell: globális vs URL-enkénti időablak
+# ADR-002 — Schedule model: global vs per-URL time window
 
-**Státusz: PROPOSED (NYITOTT — döntés kell a v2 megkezdése előtt)**
-**Dátum:** 2026-08-12
+**Status: ACCEPTED (2026-08-13, v2)**
+**Date:** 2026-08-12
 
-## Kontextus
+## Context
 
-A jelenlegi UI egy **globális** időintervallumot ad meg, a listán minden URL ugyanahhoz az ablakhoz tartozik. Az **adatmodell** viszont már most is URL-ekenként tárolja a `startTime`/`endTime` mezőket — tehát a háttér támogatná az URL-enkénti ütemtervet, csak a UI nem.
+The current UI specifies a **global** time interval, with every URL on the list belonging to the same window. The **data model**, however, already stores `startTime`/`endTime` per URL — so the background could support a per-URL schedule, only the UI can't.
 
-## Lehetőségek
+## Options
 
-1. **Globális időablak** (a jelenlegi): egyetlen kezdő/végső idő az összes URL-re. Egyszerű UI, kevésbé rugalmas.
-2. **URL-enkénti időablak**: minden URL-nek saját kezdő/végső ideje van. Rugalmas (pl. facebook éjjel, youtube munkaidőben), de több UI-elemet igényel.
+1. **Global time window** (the current one): a single start/end time for all URLs. Simple UI, less flexible.
+2. **Per-URL time window**: each URL has its own start/end time. Flexible (e.g. social media at night, video streaming during work hours), but requires more UI elements.
 
-## Megfontolandó
+## Considerations
 
-- A v1 popup-ja az egész listára vonatkozó ablakot állít be egyetlen formmal.
-- A storage-modell már készen áll a (2)-re.
-- Skálázhatóság / komplexitás tekintetében a (2) egy-két extra inputot és egy-két oszlopot igényel a listában.
+- v1's popup sets a window for the whole list with a single form.
+- The storage model is already ready for (2).
+- In terms of scalability/complexity, (2) requires one or two extra inputs and one or two extra columns in the list.
 
-## Javaslat
+## Recommendation
 
-Válaszd a **(2)** opciót: URL-enkénti időablak. Ha a felhasználó továbbra is globális ütemtervet szeretne, az egy "gyorsbeállítás" szinten megőrizhető (pl. felüliró globális érték).
+Choose option **(2)**: a per-URL time window. If the user still wants a global schedule, that can be preserved at a "quick setting" level (e.g. an overriding global value).
 
-## Döntés (üres — kitöltendő)
+## Decision (2026-08-13)
 
-> **Döntés:** *(a felhasználó jóváhagyásával kitöltendő)*
+> **Decision:** The **per-URL** schedule model. Each list item has its own schedule mode:
+> - `all_day` — no time fields, always blocked.
+> - `time_window` — its own `start`/`end` window (in 15-minute steps, 00/15/30/45).
+>
+> The v1 global "one window for everything" approach is removed; the data model (`sites[]`) stores the schedule per item. The `startTime`/`endTime` string fields are migrated from the old model (imported as `time_window` mode).
+>
+> Rationale: in the v2 task the user explicitly asked for per-URL differentiated scheduling (e.g. blocking a site from 10 AM to 4 PM, or never again). The storage model already supported this in v1 — only the UI didn't use it.

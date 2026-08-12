@@ -1,15 +1,15 @@
-# v1.0 Jelenlegi működés — Specifikáció
+# v1.0 Current behavior — Specification
 
-A dokumentum a v1.0 kódjának tényleges (felmért) működését rögzíti 2026-08-12 állapot alapján.
+This document records the actual (surveyed) behavior of the v1.0 code, as of 2026-08-12.
 
-## Funkciók
+## Features
 
-1. **URL hozzáadása** — A popupban megadunk egy URL-mintát (`url`), a kezdő- és végórákat/perceket (`startHour`, `startMinute`, `endHour`, `endMinute`). Hozzáadáskor a `blockedUrls` tömbhöz kerül egy `{ url, startTime, endTime }` objektum.
-2. **Listázás** — A popup felsorolja a mentett elemeket, mindegyik mellett törlés (`X`) gombbal (index-alapú törlés).
-3. **Blokkolás** — A service worker a `blockedUrls` alapján DNR dinamikus szabályokat hoz létre `block` akcióval, `main_frame` típusra.
-4. **Ütemezés** — A szabályok 1 percenként (alarm) és minden módosításkor újragenerálódnak (az aktuális időintervallumon belüli elemek érvényesek).
+1. **Add URL** — In the popup you enter a URL pattern (`url`) and the start/end hours and minutes (`startHour`, `startMinute`, `endHour`, `endMinute`). On add, a `{ url, startTime, endTime }` object is appended to the `blockedUrls` array.
+2. **Listing** — The popup lists the saved items, each with a delete (`X`) button (index-based deletion).
+3. **Blocking** — From `blockedUrls`, the service worker creates DNR dynamic rules with the `block` action for the `main_frame` type.
+4. **Scheduling** — The rules are regenerated every minute (alarm) and on every modification (items within the current time interval are active).
 
-## Adatmodell
+## Data model
 
 ```
 blockedUrls: [
@@ -17,22 +17,22 @@ blockedUrls: [
 ]
 ```
 
-- `url`: szabad szöveges minta (pl. `facebook.com`), nincs validáció.
-- `startTime` / `endTime`: string "HH:MM" formátumban, az inputok (`type="number"`) leadhatnak `"7:30"` stb. alakot is.
+- `url`: free-text pattern (e.g. `facebook.com`), no validation.
+- `startTime` / `endTime`: strings in "HH:MM" format; the inputs (`type="number"`) can also yield shapes like `"7:30"`.
 
-## UI-folyamatok
+## UI flows
 
-- **Hozzáadás:** minden mező kitöltése kötelező; hiba esetén csak `console.error`, a felhasználó nem kap visszajelzést.
-- **Törlés:** a sor indexe alapján `splice(index, 1)`, majd újrarajzolás.
-- **Betöltés:** `loadURLs()` a popup összeállításakor.
+- **Add:** every field must be filled in; on error there is only a `console.error` — the user gets no feedback.
+- **Delete:** `splice(index, 1)` by row index, then re-rendering.
+- **Load:** `loadURLs()` when the popup is assembled.
 
-## Tárolt szabálygenerálás logikája
+## Rule-generation logic for stored items
 
-Feltétel a kódban (`background.js`): ha az aktuális idő **nem** esik a `[start, end]` intervallumba, a szabály kimarad. Ha beleesik, létrejön a szabály. (Tehát a jelenlegi kód az intervallumon **belül** blokkol — ellentétben a `manifest.json` leírásával, ami "kívül"-t mond. Nyitott döntés: [03-decisions](03-decisions).)
+Condition in the code (`background.js`): if the current time does **not** fall within the `[start, end]` interval, the rule is omitted. If it does, the rule is created. (So the current code blocks **within** the interval — contrary to the `manifest.json` description, which says "outside". Open decision: [03-decisions](03-decisions).)
 
-## Ismert tervezési korlátok (v1)
+## Known design limitations (v1)
 
-- Egyedüli, globális időablak érvényesül minden URL-re.
-- Nincs dupilált-ellenőrzés, URL-formátum validáció, sem felhasználói hibavisszajelzés.
-- Nincs éjfél-átlépés kezelés.
-- A `blocked.html` nincs bekötve semmilyen folyamatba.
+- A single global time window applies to all URLs.
+- No duplicate check, no URL-format validation, and no user-facing error feedback.
+- No midnight-crossing handling.
+- `blocked.html` is not wired into any flow.

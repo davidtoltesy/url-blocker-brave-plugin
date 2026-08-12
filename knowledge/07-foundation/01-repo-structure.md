@@ -1,29 +1,27 @@
-# Repo felépítése és konvenciók
+# Repo structure and conventions
 
-## Mappaszerkezet
+## Folder structure
 
 ```
 BrowserPlugin/
-├── manifest.json          # MV3 kiegészítő manifest
-├── background.js          # service worker — szabálygenerálás és ütemezés
-├── popup.html / popup.js  # beállító felület
-├── blocked.html           # (v1: holt kód — nem bekötött)
-├── rules.json             # statikus DNR szabályok (üres helyőrző)
-├── icon16/48/128.png      # ikonok
-├── _metadata/             # böngésző-generált (NEM a repóba való — lásd .gitignore)
-└── knowledge/             # projekt tudásbázisa (ez a könyvtár)
+├── manifest.json          # MV3 extension manifest (v2)
+├── background.js          # service worker — DNR rule generation, one-shot alarm
+├── popup.html / popup.js  # settings UI (2 tabs, dark "focus" theme)
+├── icon16/48/128.png      # icons
+├── _metadata/             # browser-generated (NOT for the repo — see .gitignore)
+└── knowledge/             # the project knowledge base (this directory)
 ```
 
-## Konvenciók
+## Conventions
 
-- **Nyelv:** magyar a termék és a dokumentáció; a kódváltozó-nevek maradjanak angolul.
-- **Dátumformátum:** `YYYY-MM-DD`.
-- **Fájlnév-magyarázat:** a knowledge almappák előtagja számozott (`00-`, `01-`, ...) — lásd a Canvas mintáját; a fájlok `NN-nev.md` mintát követnek.
-- **ADR:** `adr-NNN-<kisszavú-név>.md`; a nyitottak **PROPOSED** státuszt kapnak.
+- **Language:** the product and the documentation are in Hungarian; code variable names stay in English.
+- **Date format:** `YYYY-MM-DD`.
+- **File naming:** the `knowledge` subfolders use a numbered prefix (`00-`, `01-`, ...) — see the Canvas pattern; files follow the `NN-name.md` pattern.
+- **ADR:** `adr-NNN-<short-name>.md`; open ones get **PROPOSED** status.
 
-## Munka-szabályok (jelen projekt)
+## Work rules (current project)
 
-1. **Csak jóváhagyott backlog elemeket** valósítsunk meg (lásd [09-product-backlog](09-product-backlog)).
-2. A v2 munka megkezdése előtt a két nyitott ADR-t ([001](03-decisions/adr-001-blocking-semantics.md), [002](03-decisions/adr-002-schedule-model.md)) zárjuk le a felhasználóval.
-3. Kódolás közben tartsuk be a [04-lessons-learned](04-lessons-learned) tanulságait.
-4. Minden változás után frissítsük a knowledge dokumentációt (különösen a backlog státuszt és a jelen állapotot).
+1. **Only implement approved backlog items** (see [09-product-backlog](09-product-backlog)).
+2. Before starting the v2 work, close the two open ADRs ([001](03-decisions/adr-001-blocking-semantics.md), [002](03-decisions/adr-002-schedule-model.md)) with the user.
+3. While coding, follow the lessons in [04-lessons-learned](04-lessons-learned).
+4. After every change, update the knowledge documentation (especially the backlog status and the current state).

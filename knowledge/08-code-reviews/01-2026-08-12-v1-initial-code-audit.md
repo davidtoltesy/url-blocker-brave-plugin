@@ -1,82 +1,84 @@
-# v1.0 Teljes kód-audit — 2026-08-12
+# v1.0 Full code audit — 2026-08-12
 
-Forrás: az "Állapotfelmérés: Időzített URL Blokkoló (v1.0)" elemzés, ami a v2 megkezdése előtt készült. Ezt a fájlt a knowledge-base-ben tartjuk mint a v1.0 hivatalos code review-ját.
+> **Status (2026-08-13):** v2 is done, and every bug listed here is fixed (see the statuses in [09-product-backlog/01-backlog.md](../09-product-backlog/01-backlog.md)). This document is archival — it records the actual state of v1.0.
+
+Source: the "Status assessment: Scheduled URL Blocker (v1.0)" analysis, prepared before v2 was started. We keep this file in the knowledge base as the official code review of v1.0.
 
 ---
 
-# 📋 Állapotfelmérés: "Időzített URL Blokkoló" (v1.0)
+# 📋 Status assessment: "Scheduled URL Blocker" (v1.0)
 
-**Típus:** Manifest V3 Chrome/Brave extension, `declarativeNetRequest`-en alapul
+**Type:** Manifest V3 Chrome/Brave extension, based on `declarativeNetRequest`
 
-**Fájlok:**
+**Files:**
 
-| Fájl | Szerep | Állapot |
+| File | Role | Status |
 |---|---|---|
-| `manifest.json` | Konfiguráció (MV3) | ✅ Megfelelő, de van 1 hiba |
-| `background.js` | Service worker – szabálykezelés | ⚠️ Több logikai hiba |
-| `popup.html` / `popup.js` | Beállító felület | ⚠️ Törékeny, validáció nélkül |
-| `blocked.html` | "Blokkolt oldal" üzenet | ❌ **Holt kód, nem használódik** |
-| `Rules.json` | Statikus DNR szabályok | ⚠️ Név-eltérés, üres |
-| `_metadata/` | Böngésző-generált műtermék | ⚠️ Git-ben kellene ignorálni |
+| `manifest.json` | Configuration (MV3) | ✅ OK, but 1 bug |
+| `background.js` | Service worker – rule management | ⚠️ Several logic bugs |
+| `popup.html` / `popup.js` | Settings UI | ⚠️ Fragile, no validation |
+| `blocked.html` | "Blocked page" message | ❌ **Dead code, not used** |
+| `Rules.json` | Static DNR rules | ⚠️ Name mismatch, empty |
+| `_metadata/` | Browser-generated artifact | ⚠️ Should be ignored in git |
 
 ---
 
-## 🐛 Kritikus problémák
+## 🐛 Critical problems
 
-**1. A blokkolási logika ellentmond a leírásnak**
-- `manifest.json` leírása: *"Blokkolja az URL-eket a megadott időintervallumokon **kívül**"*
-- `background.js` (19. sor): `if (now < startDate || now > endDate) return null;` → **csak az intervallumon belül blokkol**
-- A kód és a UI konzisztens egymással (intervallumon *belül* blokkol), csak a leírás rossz — de ezt tisztázni kell, mert ez a funkció alapja. → **Nyitott ADR-001.**
+**1. The blocking logic contradicts the description**
+- `manifest.json` description: *"Blocks URLs **outside** the given time intervals"*
+- `background.js` (line 19): `if (now < startDate || now > endDate) return null;` → **only blocks within the interval**
+- The code and the UI are consistent with each other (blocking *within* the interval); only the description is wrong — but this must be clarified, because it's the basis of the feature. → **Open ADR-001.**
 
-**2. Éjfél-átlépés nem működik**
-- `22:00 – 06:00` intervallumnál a kód ugyanarra a napra teszi a kezdő- és végidőt, ezért éjfél után soha nem blokkol. Ez tipikus, gyakori használati eset (pl. esti social media blokk).
+**2. Midnight crossing doesn't work**
+- For a `22:00 – 06:00` interval the code puts the start and end time on the same day, so it never blocks after midnight. This is a typical, common use case (e.g. an evening social-media block).
 
-**3. A szabály-ID-k 100 fölötti esetben elvesztik a tisztítást**
-- `removeRuleIds` keménykódolt `1..100` (37. sor), de az ID-k `index+1` alapján nőnek. Ha 100-nál több URL van, a régi 101+ szabályok **örökre bennmaradnak** a DNR-ben.
+**3. Rule ids above 100 lose their cleanup**
+- `removeRuleIds` is hardcoded to `1..100` (line 37), but the ids grow based on `index+1`. With more than 100 URLs, the old 101+ rules **stay in the DNR forever**.
 
-**4. `blocked.html` sehol nincs bekötve**
-- A DNR `block` action nem jelenít meg egyedi oldalt, csak a böngésző `ERR_BLOCKED_BY_CLIENT` hibáját. A fájl jelenleg holt kód.
+**4. `blocked.html` isn't wired in anywhere**
+- The DNR `block` action doesn't display a custom page, only the browser's `ERR_BLOCKED_BY_CLIENT` error. The file is currently dead code.
 
-**5. Fájlnév eltérés: `rules.json` vs `Rules.json`**
-- A manifest `path: "rules.json"`-ra hivatkozik, a fájl `Rules.json`. macOS-en (case-insensitive FS) véletlenül működik, de **Linuxon / CI-n elhasalna a betöltés**.
-
----
-
-## ⚠️ Fontosabb problémák
-
-1. **Upstream adatok nélkül is fut:** ha egy mentett elem hiányos (`startTime` hiányzik), a `split()` hibára fut és az egész frissítés elszáll.
-2. **Hamis pozitív szabályok:** `urlFilter: "facebook.com"` a `notfacebook.com`-ot is blokkolja. Domain-anchor (`||`) hiánya miatt.
-3. **A popup index-alapú törlést használ** (`splice(index, 1)`), ami törékeny; a `background.js`-ben ott van egy URL-alapú `removeUrlFromRules` is, ami sosem hívódik (holt kód, duplikáció).
-4. **Nincs felhasználói visszajelzés:** hiba esetén csak `console.error`, a popup csendben nem csinál semmit (hibás/üres URL, duplikátum).
-5. **Nincs URL-validáció és duplikátum-szűrés** a felvételkor.
+**5. Filename mismatch: `rules.json` vs `Rules.json`**
+- The manifest references `path: "rules.json"`, the file is `Rules.json`. On macOS (case-insensitive FS) it happens to work, but on **Linux / CI the load would fail**.
 
 ---
 
-## 🔧 Kisebb / kódminőségi megjegyzések
+## ⚠️ More significant problems
 
-1. **1 perces alarm:** a `updateDynamicRules` akkor is fut, ha semmi nem változott; feleslegesen ébreszti a service workert.
-2. **Nincs hibakezelés:** `chrome.runtime.lastError` sehol nincs ellenőrizve.
-3. `declarativeNetRequest` + `declarativeNetRequestWithHostAccess` együtt redundáns a mostani jogosultságok mellett.
-4. `sendResponse` szinkron tűz-és-felejt, `return true` nincs — jelenleg működik, de veszélyes minta.
-5. `_metadata/` a böngésző által generált bináris állapotfájl — **nem tartozik a repo-ba**, `.gitignore`-ba kellene (épp ez a ki nem staged módosítás a `git status`-ban).
-6. A popup HTML-ben kommentelt régi CSS halott kód.
-
----
-
-## 💡 Ami viszont jó alap
-
-- Helyes **MV3 architektúra** (service worker + DNR) — ez modern irány, a `webRequest` blokkolásnál sokkal jobb.
-- A **storage-alapú, dinamikus szabály** modell jól skálázható.
-- **Nincs XSS:** a popup `textContent`-et használ (nem `innerHTML`), a bevitel nem jut HTML-be.
-- A tárolós modell (`url + startTime + endTime`) már most támogatná a **per-domain ütemtervet** — csak a UI nem használja ki (globális intervallum).
+1. **Runs on raw upstream data:** if a saved item is incomplete (`startTime` missing), `split()` throws and the whole refresh collapses.
+2. **False-positive rules:** `urlFilter: "facebook.com"` also blocks `notfacebook.com`. Due to the missing domain anchor (`||`).
+3. **The popup uses index-based deletion** (`splice(index, 1)`), which is fragile; `background.js` also has a URL-based `removeUrlFromRules` that is never called (dead code, duplication).
+4. **No user feedback:** on error there's only a `console.error`; the popup silently does nothing (invalid/empty URL, duplicate).
+5. **No URL validation or duplicate filtering** on add.
 
 ---
 
-## 🔄 Következő lépések (rögzítve a backlogban)
+## 🔧 Minor / code-quality notes
 
-Mielőtt a v2-t elkezdenénk, két dolgot érdemes eldönteni:
+1. **1-minute alarm:** `updateDynamicRules` runs even when nothing changed; it needlessly wakes the service worker.
+2. **No error handling:** `chrome.runtime.lastError` is never checked anywhere.
+3. `declarativeNetRequest` + `declarativeNetRequestWithHostAccess` together are redundant given the current permissions.
+4. `sendResponse` is a synchronous fire-and-forget, without `return true` — it works for now, but it's a dangerous pattern.
+5. `_metadata/` is a browser-generated binary state file — **it doesn't belong in the repo**, it should be in `.gitignore` (this is exactly the unstaged modification in `git status`).
+6. The commented-out old CSS in the popup HTML is dead code.
 
-1. **Blokkolási szemantika** – az intervallumon *belül* vagy *kívül* blokkoljon? (Kód = belül, leírás = kívül) → [ADR-001](../03-decisions/adr-001-blocking-semantics.md)
-2. **Ütemterv modell** – globális időablak az összes URL-re (mint most), vagy URL-enként egyedi ablakok (amit a storage már tud)? → [ADR-002](../03-decisions/adr-002-schedule-model.md)
+---
 
-A konkrét javítási és fejlesztési feladatok a [09-product-backlog/01-backlog.md](../09-product-backlog/01-backlog.md) fájlban találhatók.
+## 💡 What's a good foundation though
+
+- Correct **MV3 architecture** (service worker + DNR) — this is the modern direction, much better than `webRequest` blocking.
+- The **storage-based, dynamic rule** model scales well.
+- **No XSS:** the popup uses `textContent` (not `innerHTML`); input never reaches HTML.
+- The storage model (`url + startTime + endTime`) would already support a **per-domain schedule** — only the UI doesn't use it (global interval).
+
+---
+
+## 🔄 Next steps (recorded in the backlog)
+
+Before starting v2, two things are worth deciding:
+
+1. **Blocking semantics** – should it block *within* or *outside* the interval? (Code = within, description = outside) → [ADR-001](../03-decisions/adr-001-blocking-semantics.md)
+2. **Schedule model** – a global time window for all URLs (as now), or individual per-URL windows (which storage already supports)? → [ADR-002](../03-decisions/adr-002-schedule-model.md)
+
+The concrete fixes and feature tasks are in the [09-product-backlog/01-backlog.md](../09-product-backlog/01-backlog.md) file.

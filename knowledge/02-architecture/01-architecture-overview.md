@@ -1,65 +1,73 @@
-# Architektúra — v1.0 (Manifest V3)
+# Architecture — v2.0 (Manifest V3)
 
-## Áttekintés
+## Overview
 
 ```
-┌─────────────┐   chrome.storage.local   ┌──────────────────┐
-│   popup.js  │ ───────────────────────► │  blockedUrls[]   │
-│  (popup UI) │ ◄─────────────────────── │                  │
-└─────────────┘         list/status       └────────┬─────────┘
-                                                   │
-┌──────────────────────┐   updateDynamicRules      ▼
-│  background.js       │  ─────────────────►  declarativeNetRequest
-│  (service worker)    │                        (blokkolás main_frame-re)
-└──────────────────────┘
-   ▲        │
-   │        └─ alarm 1 percenként
-   └─ message (updateRules)
+┌─────────────┐  chrome.storage.local  ┌──────────────────┐
+│  popup.js   │ ─────────────────────► │  sites[]         │
+│  (tab UI)   │  (add/edit/toggle/     │  (general)       │
+└─────────────┘   delete)              └────────┬─────────┘
+                                               │ storage.onChanged
+┌──────────────────────┐ ◄────────────────────▼──────────────┐
+│  background.js        │ ◄─────────── updateBlockingRules() │
+│  (service worker)     │    ┌─────────────────────────────┐ │
+│                       │    │ getDynamicRules → diff      │ │
+│                       │    │ updateDynamicRules          │ │
+│                       │    │ scheduleNextRefresh (alarm) │ │
+└──────────────────────┘    └─────────────────────────────┘ │
+   ▲        │                                                │
+   │        └──────────────────► declarativeNetRequest ──────┤
+   └ alarms (one-shot, only at transitions)                  │
 ```
 
-## Összetevők
+## Components
 
-### 1. Popup (`popup.html` + `popup.js`)
-- Felhasználói felület: URL + óra/perc bevitel, listázás, törlés.
-- Közvetlenül a `chrome.storage.local`-t módosítja; a szabályfrissítés a service worker feladata (`updateRules` üzenet).
+### 1. Popup — `popup.html` / `popup.js`
+- Two tabs: **"New block"** (URL + schedule + submit) and **"List"** (managing items).
+- Writes only to `chrome.storage.local` (`sites`); there is **no** `chrome.runtime.sendMessage` within the UI — the background reacts to `storage.onChanged`.
+- `activeTab` permission: to read the active tab's URL for prefilling the "New block" field.
 
-### 2. Service worker (`background.js`)
-- **`updateBlockingRules()`** — beolvassa a `blockedUrls`-t, minden elemhez DNR-szabályt generál, ha az aktuális idő az adott elem intervallumán **belül** van; `updateDynamicRules`-sal cseréli a teljes szabálykészletet.
-- **Alarm** — 1 percenként újragenerálja a szabályokat (az időablak-váltás kezelése).
-- **Üzenetkezelő** — `updateRules` üzenetre azonnali frissítés.
+### 2. Background — `background.js` (service worker)
 
-### 3. declarativeNetRequest
-- A sablon a `manifest.json` `declarative_net_request.rule_resources[0]` statikus `rules.json`-ából indul (üres).
-- A tényleges blokkolás dinamikus szabályokkal történik.
-- A `block` akció **nem** jelenít meg egyedi oldalt (a `blocked.html` nincs is bekötve); a böngésző saját `ERR_BLOCKED_BY_CLIENT` hibája jelenik meg.
+**`loadSites()`**
+- Reads the `sites` array; if it's absent but a legacy `blockedUrls` exists → migrates: every v1 item is imported as `time_window` mode with `active: true`, then the legacy key is deleted.
 
-## Engedélyek (permissions)
+**`isBlockedNow(site, now)`**
+- `active === false` → not blocked (suspended).
+- `all_day` → always blocked.
+- `time_window` → blocked within the window; midnight crossing (`start > end`) supported; `start === end` → blocks all day.
+- The interval `[start, end)` is half-open (clarifying v1's inclusive-`< end` behavior).
 
-- `declarativeNetRequest`, `declarativeNetRequestWithHostAccess`, `storage`, `alarms`
-- `host_permissions: "*://*/*"` — széles, de a dinamikus DNR-szabályokhoz szükséges.
-- Megjegyzés: `declarativeNetRequest` + `declarativeNetRequestWithHostAccess` együtt redundánsnak tűnik (vizsgálandó a v2-ben).
+**`updateBlockingRules()`**
+- Generates `block` rules for the currently active items with `urlFilter: "||" + url` (anchored, to avoid false positives), for `main_frame`.
+- **Diff-based refresh:** `getDynamicRules()` → compares the current ids with the desired ones; only calls `updateDynamicRules` if they differ. So no unnecessary update runs when nothing changed.
 
-## Folyamatok
+**`scheduleNextRefresh(sites)`**
+- Finds the **next time transition** among the start/end corners of all active `time_window` items.
+- **One-shot alarm** (`chrome.alarms.create` with `when`) for the transition time + a 2 s safety margin.
+- If no such transition exists, the alarm is cleared. **No periodic execution** — replacing v1's per-minute alarm and drastically reducing memory/CPU load.
 
-### Szabályfrissítés menete
-1. Trigger: alarm (1 perc) / `updateRules` üzenet / `onInstalled`.
-2. `updateBlockingRules()` beolvassa a tárolt listát.
-3. Szűrés: mostani idő intervallumon belül van-e.
-4. `updateDynamicRules({ removeRuleIds: [1..100], addRules })`.
-5. Logolás konzolra.
+### 3. Refresh triggers
 
-### Hozzáadás menete (popup)
-1. Bemenetek bekérése, alap validáció (nem üres).
-2. `chrome.storage.local.set({ blockedUrls: newList })`.
-3. `loadURLs()` újrarajzol.
+- `chrome.storage.onChanged` (on the `sites` / `blockedUrls` keys) — immediate on popup add/delete.
+- `chrome.alarms.onAlarm` (`refreshRules`) — on time-window changes.
+- `chrome.runtime.onInstalled` + `onStartup`.
+- `updateBlockingRules()` called once on startup.
 
-### Törlés menete (popup)
-1. Index-alapú: `splice(index, 1)` (a sort – index – alapján).
-2. Mentés + újrarajzolás.
+## Permissions (v2)
 
-## Ismert architekturális hibák (részletek a code review-ban)
+- `declarativeNetRequest`, `storage`, `alarms`, `activeTab`.
+- Removed from v1: `declarativeNetRequestWithHostAccess` (redundant), global `host_permissions` (DNR dynamic rules don't need host permission), and the static `declarative_net_request` block + `Rules.json`.
+- `activeTab` — only for the popup to read the active tab's URL; no `tabs` (less invasive).
 
-- A `removeRuleIds` keménykódolt `[1..100]`, miközben az ID-k `index+1`-et használnak → 100+ szabálynál nem minden szabály kerül eltávolításra.
-- A szabálygenerálás nem kezeli a hiányos adatokat (`urlObj.startTime.split()` hibára futhat).
-- Az `urlFilter` horgonyozatlan, hamis pozitív lehetséges (`facebook.com` blokkolhatja a `notfacebook.com`-ot is).
-- Időintervallum-átlépés (éjfél) nincs kezelve.
+## Memory / resource optimization
+
+- **No content script**, no `webRequest`, no `onMessage` — blocking is native DNR (browser engine), so JS memory usage is near zero.
+- **No periodic alarm**: the service worker stays dormant most of the time; it only wakes at transitions.
+- Diff-based rule refresh — doesn't swap the rule set unnecessarily.
+- `sites[]` is minimal in size; legacy `blockedUrls` migrated, legacy key deleted.
+
+## Known limitations
+
+- The minimum period of a `when`-based alarm can be 30 s — a small slip is possible despite the +2 s margin, but the subsequent `updateBlockingRules` and rescheduling correct it.
+- No custom "blocked page" — the native `ERR_BLOCKED_BY_CLIENT` is shown (MV3 limitation, backlog #5 closed: recommended for deletion, `blocked.html` removed).

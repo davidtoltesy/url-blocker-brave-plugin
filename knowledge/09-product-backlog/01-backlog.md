@@ -1,36 +1,38 @@
-# Backlog — Időzített URL Blokkoló (v1 → v2)
+# Backlog — Scheduled URL Blocker (v1 → v2)
 
-Ötletek és javítási feladatok. **Megvalósítás csak explicit jóváhagyással.**
+Ideas and fix tasks. **Implementation only with explicit approval.**
 
-A backlog tételei az [08-code-reviews/01-2026-08-12-v1-initial-code-audit.md](08-code-reviews/01-2026-08-12-v1-initial-code-audit.md) kód-auditból származnak, kibővítve a jövőbeli fejlesztési ötletekkel. A két nyitott stratégiai döntés ([ADR-001](03-decisions/adr-001-blocking-semantics.md), [ADR-002](03-decisions/adr-002-schedule-model.md)) előfeltétele a többi tételnek.
+The backlog items come from the [08-code-reviews/01-2026-08-12-v1-initial-code-audit.md](08-code-reviews/01-2026-08-12-v1-initial-code-audit.md) code audit, expanded with future feature ideas. The two open strategic decisions ([ADR-001](03-decisions/adr-001-blocking-semantics.md), [ADR-002](03-decisions/adr-002-schedule-model.md)) are prerequisites for the other items.
 
-| # | Dátum | Tétel | Státusz |
-|---|-------|-------|---------|
-| 1 | 2026-08-12 | **ADR-001: Blokkolási szemantika döntése** — intervallumon belül (jelenlegi kód) vagy kívül (manifest leírása) blokkoljon; a manifest leírását hozzá kell igazítani a kódhoz. | **~nyitott (döntés kell)** |
-| 2 | 2026-08-12 | **ADR-002: Ütemterv-modell döntése** — globális időablak (jelenlegi) vagy URL-enkénti időablak (a storage-modell már támogatja). | **~nyitott (döntés kell)** |
-| 3 | 2026-08-12 | **Éjfél-átlépés támogatása** — `22:00–06:00` típusú intervallumok helyes kezelése a `background.js` szabálygenerálásában; a feltétel átdolgozása `end < start` esetre. | pending |
-| 4 | 2026-08-12 | **Szabály-tisztítás javítása** — a `removeRuleIds` helyett a tényleges, ismert szabály-ID-k eltávolítása; vizsgálandó a 100-as felső limit (a DNR dinamikus szabályszám-limitje), és a szabály-ID-k újragenerálásának logikája. | pending |
-| 5 | 2026-08-12 | **`blocked.html` sorsa** — vagy bekötés egy valódi szabály-alapú megoldásba (megnézve a DNR `redirect` korlátait), vagy eltávolítás; a v1-ben holt kód. | pending |
-| 6 | 2026-08-12 | **Fájlnév-eltérés javítása** — `rules.json` vs `Rules.json` egyesítése (a manifest `path`-je és a tényleges fájl neve), hogy a betöltés Linux-on/CI-n is működjön. | pending |
-| 7 | 2026-08-12 | **Hiányos adatok robusztus kezelése** — a `background.js` szabálygenerálásában `try/catch` + mező-szintű validálás, hogy egy hibás elem ne szakítsa meg az egész frissítést. | pending |
-| 8 | 2026-08-12 | **Hamis pozitív urFilter javítása** — domain-mintákhoz horgonyozott `urlFilter` (`||facebook.com`), hogy ne blokkolja a `notfacebook.com`-ot; a felhasználói bevitel normalizálása (prefix/ffejezés). | pending |
-| 9 | 2026-08-12 | **Törlés URL-alapra váltása** — a popup index-alapú `splice(index, 1)` törlését cseréld URL-alapú azonosításra; a `background.js`-ben lévő URL-alapú `removeUrlFromRules` duplikációt konszolidálni (holt kód). | pending |
-| 10 | 2026-08-12 | **Felhasználói visszajelzés + validáció a popupban** — üres/rossz formátumú URL, hiányzó mezők és duplikátum esetén in-place hibaüzenet (nem csak `console.error`). | pending |
-| 11 | 2026-08-12 | **Alarm-optimalizálás** — a szabályfrissítés ne fusson percenként, ha semmi nem változott; időablakon való átlépés-érzékelés / módosítás-függő trigger. | pending |
-| 12 | 2026-08-12 | **Hibakezelés a szabályfrissítésnél** — `chrome.runtime.lastError` ellenőrzése; a `sendResponse` mintájának javítása (`return true`), ha a válasz aszinkron lesz. | pending |
-| 13 | 2026-08-12 | **Permissziók takarítása** — `declarativeNetRequest` + `declarativeNetRequestWithHostAccess` redundancia vizsgálata és a felesleges tétel eltávolítása. | pending |
-| 14 | 2026-08-12 | **Repo-higiénia** — `_metadata/` és `.DS_Store` a `.gitignore`-ba; a tracked `_metadata` fájlok kivétele a git-ből. | pending |
-| 15 | 2026-08-12 | **Halott CSS törlése** — a popup HTML-ben a kommentelt régi `.remove-button` stílusok eltávolítása. | pending |
-| 16 | 2026-08-12 | **IDŐ-VALIDÁCIÓ a popupban** — az inputok `type="number"` jellegéből adódó "7:30" vs "07:30" normalizálás; az óra/perc mindig 2-jegyű legyen a tárolásban. | pending |
-| 17 | 2026-08-12 | **Ötlet:** URL-enkénti időablak + napi/helyi közben választott blokkolási szemantika (a jelenlegi "globális ablak" UI kivezetése). | pending |
-| 18 | 2026-08-12 | **Ötlet:** nazivási/hétnapos (day-of-week) időcímke-támogatás — pl. hétköznap/névnap máshogy blokkoljon. | pending |
-| 19 | 2026-08-12 | **Ötlet:** adatexport/import a `blockedUrls` listához (backup/áttelepítés lehetősége). | pending |
+| # | Date | Item | Status |
+|---|-------|-------|-------------------------------------|
+| 1 | 2026-08-12 | **ADR-001: Decision on blocking semantics** — block within (current code) or outside (manifest description) the interval; the manifest description must be aligned with the code. | **done (v2, ADR-001)** — blocks *within* the interval + `all_day` mode; the manifest description was fixed |
+| 2 | 2026-08-12 | **ADR-002: Decision on the schedule model** — a global time window (current) or a per-URL time window (the storage model already supports it). | **done (v2, ADR-002)** — per-URL modes (`all_day` / `time_window`) |
+| 3 | 2026-08-12 | **Midnight-crossing support** — correct handling of `22:00–06:00`-type intervals in the `background.js` rule generation; rework the condition for the `end < start` case. | **done (v2)** — `isBlockedNow` with an overlapping window |
+| 4 | 2026-08-12 | **Fix rule cleanup** — remove the actual, known rule ids instead of `removeRuleIds`; examine the 100-item upper limit (the DNR dynamic rule count limit) and the rule-id regeneration logic. | **done (v2)** — diff-based `getDynamicRules()`; no hardcoded range |
+| 5 | 2026-08-12 | **Fate of `blocked.html`** — either wire it into a real rule-based solution (checking the DNR `redirect` limits) or remove it; it's dead code in v1. | **done (v2)** — removed; the native `ERR_BLOCKED_BY_CLIENT` remains |
+| 6 | 2026-08-12 | **Fix the filename mismatch** — unify `rules.json` vs `Rules.json` (the manifest `path` and the actual file name) so the load also works on Linux/CI. | **done (v2)** — static rule block removed, `Rules.json` deleted |
+| 7 | 2026-08-12 | **Robust handling of incomplete data** — `try/catch` plus field-level validation in the `background.js` rule generation, so a bad item doesn't break the whole refresh. | **done (v2)** — `normalizeHost` + field validation on every input |
+| 8 | 2026-08-12 | **Fix false-positive urlFilters** — anchored `urlFilter` for domain patterns (`||facebook.com`) so it doesn't block `notfacebook.com`; normalize user input (prefix removal). | **done (v2)** — `urlFilter: "||" + normalizeHost(input)` |
+| 9 | 2026-08-12 | **Switch deletion to URL-based** — replace the popup's index-based `splice(index, 1)` deletion with URL-based identification; consolidate the URL-based `removeUrlFromRules` duplication in `background.js` (dead code). | **done (v2)** — id-based deletion; `removeUrlFromRules` removed |
+| 10 | 2026-08-12 | **User feedback + validation in the popup** — in-place error messages for empty/malformed URLs, missing fields, and duplicates (not just `console.error`). | **done (v2)** — inline `msg` (error/success) + validation |
+| 11 | 2026-08-12 | **Alarm optimization** — the rule refresh should not run every minute when nothing changed; window-transition detection / modification-dependent trigger. | **done (v2)** — one-shot alarm for the next transition; `storage.onChanged` triggers |
+| 12 | 2026-08-12 | **Error handling in the rule refresh** — check `chrome.runtime.lastError`; fix the `sendResponse` pattern (`return true`) when the response becomes asynchronous. | **done (v2)** — `onMessage` fully removed (not needed); async/await |
+| 13 | 2026-08-12 | **Permission cleanup** — examine the `declarativeNetRequest` + `declarativeNetRequestWithHostAccess` redundancy and remove the unnecessary one. | **done (v2)** — only `declarativeNetRequest`, `storage`, `alarms`, `activeTab`; `WithHostAccess` removed |
+| 14 | 2026-08-12 | **Repo hygiene** — add `_metadata/` and `.DS_Store` to `.gitignore`; untrack the tracked `_metadata` files from git. | **done (2026-08-12)** — `.gitignore` + git rm |
+| 15 | 2026-08-12 | **Delete dead CSS** — remove the commented-out old `.remove-button` styles in the popup HTML. | **done (v2)** — popup CSS fully rewritten, without the old comments |
+| 16 | 2026-08-12 | **TIME VALIDATION in the popup** — normalize "7:30" vs "07:30" caused by the `type="number"` inputs; hour/minute always 2 digits in storage. | **done (v2)** — 15-minute dropdown (00:00–23:45), always 2 digits |
+| 17 | 2026-08-12 | **Idea:** per-URL time window + per-day/locally selectable blocking semantics (phasing out the current "global window" UI). | **done (v2, ADR-002)** — implemented |
+| 18 | 2026-08-12 | **Idea:** daily/weekly (day-of-week) schedule support — e.g. block differently on weekdays vs. weekends. | pending |
+| 19 | 2026-08-12 | **Idea:** data export/import for the `blockedUrls` list (backup/migration possibility). | pending |
+| 20 | 2026-08-13 | **Prefill from the active tab** — prefill the "New block" field with the active tab's hostname (`activeTab` permission, optional task). | **done (v2)** |
+| 21 | 2026-08-13 | **Dark "focus" visual theme** — v2 modernization (based on the frontend-design skill: `#0F1216`/`#161B22`/`#F85149`). | **done (v2)** |
 
 ---
 
-## Jegyzetek
+## Notes
 
-- A **1–2** tételek (ADR-ek) megkezdése előtt a felhasználóval mindenképp le kell zárni; ezek határozzák meg a többi tétel megoldási alakját.
-- A **3–15** tételek a v1.0 auditjavításaiból állnak (hibajavítások vagy kódminőség).
-- A **16** az adatmodell konzisztenciáját javítja.
-- A **17–19** jövőbeli funkció-ötletek (nem az audit része).
+- Items **1–2** (the ADRs) were closed with the user in v2.
+- Items **3–17** were all implemented in v2 (backlog #14 was already done on 2026-08-12).
+- Items **18–19** are future feature ideas (not part of v2).
+- Items 20–21 were newly added during the v2 task.

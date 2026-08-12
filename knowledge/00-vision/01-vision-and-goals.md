@@ -1,30 +1,30 @@
-# Vízió és célok — Időzített URL Blokkoló
+# Vision and goals — Scheduled URL Blocker
 
-## Probléma
+## Problem
 
-A felhasználó időintervallumhoz kötve szeretne weboldalakat blokkolni a böngészőjében (pl. munkaidőben a facebookot, lefekvés után a közösségi médiát). A használati módnak gyorsnak és konfigurálhatónak kell lennie.
+The user wants to block websites in their browser tied to a time interval (e.g. blocking social media during work hours and after bedtime). The use pattern must be fast and configurable.
 
-## Cél
+## Goal
 
-Egy tisztán lokális, adatvédelmet megőrző Brave/Chrome kiegészítő, amely:
-- URL-eket és hozzájuk tartozó időintervallumokat tárol,
-- a megadott időben **declarativeNetRequest**-tel blokkolja a main_frame navigációt,
-- beállító felületet (popup) ad a listák kezeléséhez.
+A purely local, privacy-preserving Brave/Chrome extension that:
+- stores URLs and their associated time intervals,
+- blocks `main_frame` navigation with **declarativeNetRequest** at the scheduled times,
+- provides a settings interface (popup) for managing the lists.
 
-## Hatókör (v1.0)
+## Scope (v1.0)
 
-- Egy globális időablak, tetszőleges számú URL mellé.
-- Blokkolás a jelenlegi kód szerint az intervallumon **belül** (lásd a nyitott döntést a 03-decisions mappában).
-- A `blockedUrls` lista perzisztálása `chrome.storage.local`-ban.
-- Szabályfrissítés 1 percenként és bármilyen módosításkor.
+- One global time window for any number of URLs.
+- Blocking, per the current code, **within** the interval (see the open decision in the 03-decisions folder).
+- Persisting the `blockedUrls` list in `chrome.storage.local`.
+- Rule refresh every minute and on any modification.
 
-## Nem cél (most)
+## Out of scope (for now)
 
-- Nem végez a böngészéshez kapcsolódó adatgyűjtést.
-- Nem kínál felhő-szinkronizációt vagy fiókot.
-- Nem kezeli az éjfél-átlépő intervallumokat a v1-ben (hibaként ismert, backlog).
-- Nem differenciál URL-enkénti időablakot a jelenlegi kódban (a storage-modell viszont már támogatná).
+- No collection of browsing-related data.
+- No cloud sync or account.
+- No handling of midnight-crossing intervals in v1 (known bug, backlog).
+- No per-URL time windows differentiated in the current code (though the storage model would already support it).
 
-## Megcélzott felhasználó
+## Target user
 
-Saját, személyes használatú. A megjelenés és a funkciók a gyors, minimális konfigurációra optimalizáltak.
+Personal, for the user's own use. The look and the features are optimized for fast, minimal configuration.
