@@ -235,6 +235,50 @@
     .msg.error { background: var(--danger-dim); color: var(--danger); }
     .msg.ok { background: rgba(63, 185, 80, 0.12); color: var(--ok); }
 
+    .incognito-banner {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0 0 10px;
+      padding: 8px 10px;
+      border: 1px solid rgba(210, 153, 34, 0.5);
+      border-radius: 8px;
+      background: rgba(210, 153, 34, 0.12);
+      color: var(--text);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .incognito-banner[hidden] { display: none; }
+
+    .incognito-banner .banner-text { flex: 1; min-width: 0; }
+
+    .banner-btn {
+      flex-shrink: 0;
+      padding: 4px 8px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--surface-raised);
+      color: var(--text);
+      font-size: 11px;
+      cursor: pointer;
+    }
+
+    .banner-btn:hover { border-color: var(--text-muted); }
+
+    .banner-close {
+      flex-shrink: 0;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 14px;
+      line-height: 1;
+      cursor: pointer;
+      padding: 2px 4px;
+    }
+
+    .banner-close:hover { color: var(--text); }
+
     .list { list-style: none; margin: 0; padding: 0; }
 
     .item {
@@ -266,6 +310,24 @@
     }
 
     .item-suspended .item-domain { color: var(--text-muted); text-decoration: line-through; }
+
+    .item-masked .item-domain {
+      color: var(--text-muted);
+      font-style: italic;
+    }
+
+    .icon-btn.masked { color: var(--text-muted); }
+    .icon-btn.masked:hover { color: var(--text); }
+
+    .check {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .check input { accent-color: var(--focus); }
 
     .switch {
       position: relative;
@@ -406,6 +468,12 @@
     <span class="count" id="count"></span>
   </div>
 
+  <div class="incognito-banner" id="incognitoBanner" hidden>
+    <span class="banner-text">Private windows: not enabled. Enable it in extension settings.</span>
+    <button type="button" class="banner-btn" id="enableIncognitoBtn">Enable</button>
+    <button type="button" class="banner-close" id="incognitoDismiss" aria-label="Dismiss">&times;</button>
+  </div>
+
   <div class="tabs" role="tablist">
     <button class="tab active" id="tabAdd" role="tab" aria-selected="true">New block</button>
     <button class="tab" id="tabList" role="tab" aria-selected="false">List</button>
@@ -416,6 +484,18 @@
       <div class="field">
         <label for="urlInput">Website address</label>
         <input type="text" id="urlInput" placeholder="e.g. facebook.com" spellcheck="false">
+      </div>
+
+      <div class="field">
+        <label class="check">
+          <input type="checkbox" id="maskToggle">
+          <span>Hide site in list</span>
+        </label>
+      </div>
+
+      <div class="field" id="maskLabelField" hidden>
+        <label for="maskLabelInput">Display name</label>
+        <input type="text" id="maskLabelInput" placeholder="e.g. Work" spellcheck="false">
       </div>
 
       <div class="field">

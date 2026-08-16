@@ -14,6 +14,7 @@ A lightweight Manifest V3 browser extension for Brave/Chrome that blocks distrac
 - **List management** — toggle blocking on/off, edit, and delete from a dedicated list tab.
 - **Active-tab prefill** — the current tab's hostname is suggested when adding a new block.
 - **Sorting & pagination** — sort by name or date added; pages of 10 with a compact pagination bar.
+- **Per-site masking** — hide sensitive entries in the list behind a custom label (falls back to "Hidden site"); only the display is masked, blocking still uses the real address, which stays in your local storage.
 - **Private by design** — everything stays in `chrome.storage.local`; no cloud, no account, no tracking.
 
 ## How it works
@@ -35,6 +36,22 @@ Blocks are enforced natively by the browser using the `declarativeNetRequest` AP
 4. Manage, suspend, edit, or delete entries on the **List** tab.
 
 > No blocked sites are shipped with the extension. Your block list lives only in your browser's local storage.
+
+## Private / Incognito mode
+
+Extensions are **disabled in private windows by default** — this is a deliberate browser security feature, so it cannot be switched on from code. Enable it once per browser:
+
+**Brave**
+1. Open `brave://extensions`.
+2. Find **Scheduled URL Blocker** and click **Details**.
+3. Turn on **Allow in Private**.
+
+**Chrome**
+1. Open `chrome://extensions`.
+2. Find **Scheduled URL Blocker** and click **Details**.
+3. Turn on **Allow in Incognito**.
+
+Once enabled, the block list and schedules are **shared** between regular and private windows — there is no separate list for private mode. The popup shows a banner with an **Enable** shortcut whenever private access is off.
 
 ## Project structure
 

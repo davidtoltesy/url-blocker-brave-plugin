@@ -23,6 +23,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const pageNumbers = document.getElementById("pageNumbers");
     const pagePrev = document.getElementById("pagePrev");
     const pageNext = document.getElementById("pageNext");
+    const incognitoBanner = document.getElementById("incognitoBanner");
+    const enableIncognitoBtn = document.getElementById("enableIncognitoBtn");
+    const incognitoDismiss = document.getElementById("incognitoDismiss");
+    const maskToggle = document.getElementById("maskToggle");
+    const maskLabelField = document.getElementById("maskLabelField");
+    const maskLabelInput = document.getElementById("maskLabelInput");
 
     const modeButtons = Array.from(document.querySelectorAll(".mode"));
     const presetButtons = Array.from(document.querySelectorAll(".preset"));
@@ -42,6 +48,7 @@ document.addEventListener("DOMContentLoaded", () => {
     prefillFromActiveTab();
 
     bindEvents();
+    checkIncognitoAccess();
     loadSites();
 
     function populateTimeSelect(select) {
@@ -79,7 +86,20 @@ document.addEventListener("DOMContentLoaded", () => {
             handleSubmit();
         });
 
+        maskToggle.addEventListener("change", () => {
+            maskLabelField.hidden = !maskToggle.checked;
+            if (!maskToggle.checked) maskLabelInput.value = "";
+        });
+
         list.addEventListener("click", handleListClick);
+
+        enableIncognitoBtn.addEventListener("click", () => {
+            chrome.tabs.create({ url: "chrome://extensions/?id=" + chrome.runtime.id });
+        });
+
+        incognitoDismiss.addEventListener("click", () => {
+            incognitoBanner.hidden = true;
+        });
 
         sortSelect.addEventListener("change", () => {
             sortMode = sortSelect.value;
@@ -180,11 +200,19 @@ document.addEventListener("DOMContentLoaded", () => {
         chrome.storage.local.set({ [SITES_KEY]: sites });
     }
 
+    function checkIncognitoAccess() {
+        chrome.extension.isAllowedIncognitoAccess((allowed) => {
+            incognitoBanner.hidden = allowed;
+        });
+    }
+
     function handleSubmit() {
         const mode = currentMode();
         const url = normalizeUrl(urlInput.value);
         const start = startSelect.value;
         const end = endSelect.value;
+        const masked = maskToggle.checked;
+        const maskLabel = maskLabelInput.value.trim() || undefined;
 
         if (!url) {
             showMsg("Enter a valid website address (e.g. facebook.com).");
@@ -215,6 +243,8 @@ document.addEventListener("DOMContentLoaded", () => {
                     mode,
                     start: mode === "time_window" ? cleanStart : undefined,
                     end: mode === "time_window" ? cleanEnd : undefined,
+                    masked,
+                    maskLabel: masked ? maskLabel : undefined,
                 };
             }
             editingId = null;
@@ -234,12 +264,17 @@ document.addEventListener("DOMContentLoaded", () => {
             end: mode === "time_window" ? cleanEnd : undefined,
             active: true,
             createdAt: Date.now(),
+            masked,
+            maskLabel: masked ? maskLabel : undefined,
         });
 
         renderList();
         saveSites();
         urlInput.value = "";
         urlInput.placeholder = "e.g. facebook.com";
+        maskToggle.checked = false;
+        maskLabelInput.value = "";
+        maskLabelField.hidden = true;
         activateTab("list");
     }
 
@@ -250,6 +285,18 @@ document.addEventListener("DOMContentLoaded", () => {
             const site = sites.find((s) => s.id === id);
             if (site) {
                 site.active = !site.active;
+                renderList();
+                saveSites();
+            }
+            return;
+        }
+
+        const mask = event.target.closest("[data-mask]");
+        if (mask) {
+            const id = Number(mask.dataset.mask);
+            const site = sites.find((s) => s.id === id);
+            if (site) {
+                site.masked = !site.masked;
                 renderList();
                 saveSites();
             }
@@ -267,7 +314,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (del) {
             const id = Number(del.dataset.delete);
             const site = sites.find((s) => s.id === id);
-            if (site && confirm(`Delete the block? (${site.url})`)) {
+            if (site && confirm(`Delete the block? (${displayName(site)})`)) {
                 sites = sites.filter((s) => s.id !== id);
                 renderList();
                 saveSites();
@@ -288,6 +335,9 @@ document.addEventListener("DOMContentLoaded", () => {
             startSelect.value = site.start || "10:00";
             endSelect.value = site.end || "16:00";
         }
+        maskToggle.checked = !!site.masked;
+        maskLabelInput.value = site.maskLabel || "";
+        maskLabelField.hidden = !site.masked;
 
         submitBtn.textContent = "Save";
         urlInput.focus();
@@ -297,12 +347,17 @@ document.addEventListener("DOMContentLoaded", () => {
         return Math.max(1, Math.ceil(sites.length / PAGE_SIZE));
     }
 
+    function displayName(site) {
+        if (site.masked) return site.maskLabel || "Hidden site";
+        return site.url;
+    }
+
     function getSortedSites() {
         const copy = sites.slice();
         if (sortMode === "az") {
-            copy.sort((a, b) => a.url.localeCompare(b.url, "en"));
+            copy.sort((a, b) => displayName(a).localeCompare(displayName(b), "en"));
         } else if (sortMode === "za") {
-            copy.sort((a, b) => b.url.localeCompare(a.url, "en"));
+            copy.sort((a, b) => displayName(b).localeCompare(displayName(a), "en"));
         } else if (sortMode === "newest") {
             copy.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
         } else if (sortMode === "oldest") {
@@ -393,14 +448,18 @@ document.addEventListener("DOMContentLoaded", () => {
         const fragment = document.createDocumentFragment();
         pageSites.forEach((site) => {
             const item = document.createElement("li");
-            item.className = "item" + (site.active ? "" : " item-suspended");
+            item.className =
+                "item" +
+                (site.active ? "" : " item-suspended") +
+                (site.masked ? " item-masked" : "");
 
             const info = document.createElement("div");
             info.className = "item-info";
 
             const domain = document.createElement("div");
             domain.className = "item-domain";
-            domain.textContent = site.url;
+            domain.textContent = displayName(site);
+            domain.title = site.masked ? site.url : "";
 
             const sub = document.createElement("div");
             sub.className = "item-sub";
@@ -420,6 +479,12 @@ document.addEventListener("DOMContentLoaded", () => {
             const actions = document.createElement("div");
             actions.className = "actions";
 
+            const maskBtn = document.createElement("button");
+            maskBtn.className = "icon-btn" + (site.masked ? " masked" : "");
+            maskBtn.innerHTML = "&#128065;";
+            maskBtn.title = site.masked ? "Show" : "Hide";
+            maskBtn.dataset.mask = site.id;
+
             const editBtn = document.createElement("button");
             editBtn.className = "icon-btn";
             editBtn.innerHTML = "&#9998;";
@@ -432,6 +497,7 @@ document.addEventListener("DOMContentLoaded", () => {
             delBtn.title = "Delete";
             delBtn.dataset.delete = site.id;
 
+            actions.appendChild(maskBtn);
             actions.appendChild(editBtn);
             actions.appendChild(delBtn);
 
