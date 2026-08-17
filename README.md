@@ -5,6 +5,16 @@ A lightweight Manifest V3 browser extension for Brave/Chrome that blocks distrac
 ![Version](https://img.shields.io/badge/version-2.0-blue)
 ![Manifest](https://img.shields.io/badge/Manifest-V3-green)
 
+## Why I built this
+
+Browsers already block websites natively — but in a way I always found too complicated. One URL-blocking plugin I tried once took up **1.5 GB** of storage on my machine, which made me suspicious enough to uninstall it immediately.
+
+I have ADHD, and certain sites easily pull me away while I'm trying to work. With this extension, I just type the address, I see a blocked message, and the tab closes — it saves me time and keeps me on track.
+
+I also filter out political and negative news portals. They had a bad effect on me; cutting them out helped me feel calmer and more focused.
+
+That's why this plugin is built entirely on **simplicity and privacy**: it collects no data, transmits nothing to any server, and just does its job.
+
 ## Features
 
 - **Per-site scheduling** — each blocked site gets its own schedule:
@@ -15,7 +25,7 @@ A lightweight Manifest V3 browser extension for Brave/Chrome that blocks distrac
 - **Active-tab prefill** — the current tab's hostname is suggested when adding a new block.
 - **Sorting & pagination** — sort by name or date added; pages of 10 with a compact pagination bar.
 - **Per-site masking** — hide sensitive entries in the list behind a custom label (falls back to "Hidden site"); only the display is masked, blocking still uses the real address, which stays in your local storage.
-- **Private by design** — everything stays in `chrome.storage.local`; no cloud, no account, no tracking.
+- **Private by design** — everything stays in `chrome.storage.local`; no cloud, no account, no tracking. The extension collects no data and sends nothing to any server.
 
 ## How it works
 
@@ -66,3 +76,7 @@ knowledge/             # project knowledge base (English)
 ## Known limitations
 
 - Blocked requests show the browser's native `ERR_BLOCKED_BY_CLIENT` page (a Manifest V3 constraint of the `block` action); no custom page is shown.
+
+## Chrome Web Store
+
+Scheduled URL Blocker is coming to the Chrome Web Store soon. Until then, install it in developer mode as described above. Privacy policy: [PRIVACY.md](PRIVACY.md).
