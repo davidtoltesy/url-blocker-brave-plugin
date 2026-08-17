@@ -1,6 +1,6 @@
-# Scheduled URL Blocker
+# Scheduled URL Blocker & Focus Site Blocker
 
-A lightweight Manifest V3 browser extension for Brave/Chrome that blocks distracting websites — all day, or only during a configured time window.
+A lightweight Manifest V3 browser extension for Brave/Chrome. Block distracting websites on a flexible schedule. Zero bloat, zero tracking, and lightweight native browser enforcement.
 
 ![Version](https://img.shields.io/badge/version-2.0-blue)
 ![Manifest](https://img.shields.io/badge/Manifest-V3-green)
@@ -53,12 +53,12 @@ Extensions are **disabled in private windows by default** — this is a delibera
 
 **Brave**
 1. Open `brave://extensions`.
-2. Find **Scheduled URL Blocker** and click **Details**.
+2. Find **Scheduled URL Blocker & Focus Site Blocker** and click **Details**.
 3. Turn on **Allow in Private**.
 
 **Chrome**
 1. Open `chrome://extensions`.
-2. Find **Scheduled URL Blocker** and click **Details**.
+2. Find **Scheduled URL Blocker & Focus Site Blocker** and click **Details**.
 3. Turn on **Allow in Incognito**.
 
 Once enabled, the block list and schedules are **shared** between regular and private windows — there is no separate list for private mode. The popup shows a banner with an **Enable** shortcut whenever private access is off.
@@ -79,4 +79,4 @@ knowledge/             # project knowledge base (English)
 
 ## Chrome Web Store
 
-Scheduled URL Blocker is coming to the Chrome Web Store soon. Until then, install it in developer mode as described above. Privacy policy: [PRIVACY.md](PRIVACY.md).
+Scheduled URL Blocker &amp; Focus Site Blocker is coming to the Chrome Web Store soon. Until then, install it in developer mode as described above. Privacy policy: [PRIVACY.md](PRIVACY.md).

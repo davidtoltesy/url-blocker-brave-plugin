@@ -1,8 +1,8 @@
-# Privacy Policy — Scheduled URL Blocker
+# Privacy Policy — Scheduled URL Blocker & Focus Site Blocker
 
 **Last updated:** 2026-08-17
 
-Scheduled URL Blocker is a browser extension that blocks websites according to schedules you configure. This policy explains what happens to your data.
+Scheduled URL Blocker & Focus Site Blocker is a browser extension that blocks websites according to schedules you configure. This policy explains what happens to your data.
 
 ## Data collection
 

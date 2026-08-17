@@ -6,17 +6,19 @@ Dashboard → **Item listing**. All fields in English.
 
 ## Name
 
-Scheduled URL Blocker
+Scheduled URL Blocker & Focus Site Blocker
 
 ## Summary
 
 (≤ 132 characters)
 
-> Block distracting websites all day or during a set time window — natively, privately, and without any data leaving your device.
+> Block distracting websites on a flexible schedule. Zero bloat, zero tracking, and lightweight native browser enforcement.
 
-(116 characters)
+(121 characters)
 
 ## Detailed description
+
+The single purpose of this extension is to help users improve their focus by blocking distracting websites, either continuously or based on user-defined custom daily schedules. All blocking is enforced locally using the `declarativeNetRequest` API.
 
 ### Why I built this
 
@@ -52,7 +54,7 @@ Productivity
 
 ## Single purpose
 
-Block websites on a schedule, all day or during a configurable time window, and manage the list locally.
+The single purpose of this extension is to help users improve their focus by blocking distracting websites, either continuously or based on user-defined custom daily schedules. All blocking is enforced locally using the `declarativeNetRequest` API.
 
 ## Permissions justification
 

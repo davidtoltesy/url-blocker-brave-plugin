@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Scheduled URL Blocker",
+  "name": "Scheduled URL Blocker & Focus Site Blocker",
   "version": "2.0",
-  "description": "Blocks websites all day, or only during a configured time window.",
+  "description": "Block distracting websites on a flexible schedule. Zero bloat, zero tracking, and lightweight native browser enforcement.",
   "permissions": [
     "declarativeNetRequest",
     "storage",
